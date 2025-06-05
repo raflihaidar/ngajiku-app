@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dashboard_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -139,13 +140,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        // Process Register
-                        // You can add your authentication logic here
-                        // For example, navigate to home page after successful login
-                        // Navigator.pushReplacement(
-                        //   context,
-                        //   MaterialPageRoute(builder: (context) => const HomeScreen()),
-                        // );
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DashboardScreen(),
+                          ),
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
