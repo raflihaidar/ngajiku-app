@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
-import 'register_screen.dart';
+import 'auth/login_screen.dart';
+import 'auth/register_screen.dart';
 import 'get_started_screen.dart';
 
 class AuthOptionsScreen extends StatelessWidget {

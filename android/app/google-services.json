@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "488321893288",
+    "project_id": "ngajikuapp",
+    "storage_bucket": "ngajikuapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488321893288:android:7c0b4cf53bb094db7a939d",
+        "android_client_info": {
+          "package_name": "com.example.ngajiku"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1EKpsrWFOrnrQ5Ky-mdNPa3Tskum-XqY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
