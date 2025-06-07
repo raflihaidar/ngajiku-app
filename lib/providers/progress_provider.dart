@@ -22,7 +22,7 @@ class ProgressProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      // Jangan panggil notifyListeners() di sini untuk menghindari konflik build
 
       final QuerySnapshot snapshot = await _firestore
           .collection('progresses')
@@ -49,6 +49,7 @@ class ProgressProvider with ChangeNotifier {
       _progresses = [];
     } finally {
       _isLoading = false;
+      // Panggil notifyListeners() hanya di akhir
       notifyListeners();
     }
   }
@@ -57,7 +58,7 @@ class ProgressProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      // Jangan panggil notifyListeners() di sini
 
       final Map<String, dynamic> progressData = progress.toMap();
       progressData.remove('id');
@@ -92,7 +93,7 @@ class ProgressProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      // Jangan panggil notifyListeners() di sini
 
       final Map<String, dynamic> progressData = progress.toMap();
       progressData.remove('id');
@@ -122,7 +123,7 @@ class ProgressProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      // Jangan panggil notifyListeners() di sini
 
       await _firestore.collection('progresses').doc(progressId).delete();
       
@@ -139,12 +140,12 @@ class ProgressProvider with ChangeNotifier {
     }
   }
 
-  // Load all progresses for dashboard
-  Future<void> loadAllProgresses(String userId, String userRole) async {
+  // Load all progresses for dashboard dengan email support
+  Future<void> loadAllProgresses(String userId, String userRole, {String? userEmail}) async {
     try {
       _isLoading = true;
       _errorMessage = null;
-      notifyListeners();
+      // Jangan panggil notifyListeners() di sini untuk menghindari konflik build
 
       Query query = _firestore.collection('progresses');
       
@@ -152,18 +153,24 @@ class ProgressProvider with ChangeNotifier {
         query = query.where('guruId', isEqualTo: userId);
       } else {
         // For orangtua, load progresses of their children
-        // First get student IDs
-        final studentQuery = await _firestore
-            .collection('students')
-            .where('parentId', isEqualTo: userId)
-            .get();
+        // First get student IDs berdasarkan email parent
+        Query studentQuery = _firestore.collection('students');
         
-        final studentIds = studentQuery.docs.map((doc) => doc.id).toList();
+        if (userEmail != null) {
+          studentQuery = studentQuery.where('parentId', isEqualTo: userEmail);
+        } else {
+          studentQuery = studentQuery.where('parentId', isEqualTo: userId);
+        }
+        
+        final studentSnapshot = await studentQuery.get();
+        final studentIds = studentSnapshot.docs.map((doc) => doc.id).toList();
         
         if (studentIds.isNotEmpty) {
           query = query.where('studentId', whereIn: studentIds);
         } else {
           _progresses = [];
+          _isLoading = false;
+          notifyListeners();
           return;
         }
       }
