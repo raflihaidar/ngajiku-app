@@ -10,22 +10,56 @@ import 'screens/splash_screen.dart';
 import 'utils/app_theme.dart';
 import 'firebase_options.dart';
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+import 'dart:async'; // untuk Timer
+
+final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
 void main() async {
-  // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
-  
-  try {
-    // Initialize Firebase
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    debugPrint('✅ Firebase initialized successfully');
-  } catch (e) {
-    debugPrint('❌ Firebase initialization error: $e');
-    // App tetap bisa jalan meski Firebase error untuk development
+
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Request notification permission (important for Android 13+)
+  if (await Permission.notification.isDenied) {
+    await Permission.notification.request();
   }
-  
+
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initializationSettings = InitializationSettings(
+    android: initializationSettingsAndroid,
+  );
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
   runApp(const MyApp());
+
+  // Schedule a notification after 5 seconds (for test)
+  Timer(Duration(seconds: 5), () {
+    _showNotification();
+  });
+}
+
+Future<void> _showNotification() async {
+  await flutterLocalNotificationsPlugin.show(
+    0,
+    'Hai Bunda, ',
+    'Sudahkah Anak Bunda Mengaji Hari Ini?',
+    const NotificationDetails(
+      android: AndroidNotificationDetails(
+        'channel_id',
+        'Nama Channel',
+        importance: Importance.max,
+        priority: Priority.high,
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -40,42 +74,38 @@ class MyApp extends StatelessWidget {
           create: (_) => AuthProvider(),
           lazy: false, // Load immediately untuk check auth state
         ),
-        
+
         // Student Provider - untuk manajemen data siswa
-        ChangeNotifierProvider(
-          create: (_) => StudentProvider(),
-        ),
-        
+        ChangeNotifierProvider(create: (_) => StudentProvider()),
+
         // Progress Provider - untuk tracking progress ngaji
-        ChangeNotifierProvider(
-          create: (_) => ProgressProvider(),
-        ),
+        ChangeNotifierProvider(create: (_) => ProgressProvider()),
       ],
       child: MaterialApp(
         // App configuration
         title: 'Ngajiku - Progress Ngaji',
         debugShowCheckedModeBanner: false,
-        
+
         // Theme
         theme: AppTheme.lightTheme,
-        
+
         // Initial screen
         home: const SplashScreen(),
-        
+
         // Localization untuk bahasa Indonesia
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        
+
         // Supported locales
         locale: const Locale('id', 'ID'),
         supportedLocales: const [
           Locale('id', 'ID'), // Indonesian
           Locale('en', 'US'), // English (fallback)
         ],
-        
+
         // Global MediaQuery configuration
         builder: (context, child) {
           return MediaQuery(
@@ -86,25 +116,24 @@ class MyApp extends StatelessWidget {
             child: child ?? Container(),
           );
         },
-        
+
         // Global navigation key (untuk navigation dari provider)
         navigatorKey: GlobalKey<NavigatorState>(),
-        
+
         // Route configuration (untuk deep linking di masa depan)
         onGenerateRoute: (settings) {
           // Custom route handling bisa ditambah di sini
           return null;
         },
-        
+
         // Global error handling
         onUnknownRoute: (settings) {
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(
-                child: Text('Halaman tidak ditemukan'),
-              ),
-            ),
+            builder:
+                (_) => Scaffold(
+                  appBar: AppBar(title: const Text('Error')),
+                  body: const Center(child: Text('Halaman tidak ditemukan')),
+                ),
           );
         },
       ),

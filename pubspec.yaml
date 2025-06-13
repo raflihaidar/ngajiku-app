@@ -36,6 +36,9 @@ dependencies:
   provider: ^6.1.1                 # State management
   intl: ^0.20.2                  # Date formatting & localization
   google_fonts: ^6.1.0
+  flutter_local_notifications: ^17.0.0
+  permission_handler: ^11.3.0
+  # coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
