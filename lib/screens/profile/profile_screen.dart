@@ -66,17 +66,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   @override
+    // main layout
   Widget build(BuildContext context) {
+    
     return Scaffold(
       backgroundColor: AppTheme.lightGrey,
+
+      // Navbar atas
       appBar: AppBar(
         title: const Text('Profil'),
         backgroundColor: AppTheme.white,
         elevation: 0,
       ),
+      // Navbar atas
+
       body: Consumer3<AuthProvider, StudentProvider, ProgressProvider>(
         builder: (context, authProvider, studentProvider, progressProvider, child) {
-          final user = authProvider.user;
+          final user = authProvider.user; //untuk mendapatka data user yang sedang login
           
           if (user == null) {
             return const Center(child: CircularProgressIndicator());
@@ -109,6 +115,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+  //main layout
+
+  //profile header untuk user
 
   Widget _buildProfileHeader(UserModel user) {
     return Container(
@@ -138,7 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
-            ),
+            ),  
           ),
           
           const SizedBox(height: 16),
@@ -186,7 +195,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+  // profile header
 
+//menu item
   Widget _buildMenuItems(AuthProvider authProvider) {
     return Container(
       decoration: BoxDecoration(
@@ -238,43 +249,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
+  //menu item
 
-  Widget _buildStatItem(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(
-            icon,
-            size: 24,
-            color: color,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.greyText,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+
+
+  // Widget _buildStatItem(String title, String value, IconData icon, Color color) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: color.withOpacity(0.1),
+  //       borderRadius: BorderRadius.circular(12),
+  //     ),
+  //     child: Column(
+  //       children: [
+  //         Icon(
+  //           icon,
+  //           size: 24,
+  //           color: color,
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Text(
+  //           value,
+  //           style: TextStyle(
+  //             fontSize: 20,
+  //             fontWeight: FontWeight.bold,
+  //             color: color,
+  //           ),
+  //         ),
+  //         const SizedBox(height: 4),
+  //         Text(
+  //           title,
+  //           style: TextStyle(
+  //             fontSize: 12,
+  //             color: AppTheme.greyText,
+  //           ),
+  //           textAlign: TextAlign.center,
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildMenuItem({
     required IconData icon,
@@ -302,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onTap: onTap,
     );
   }
-
+//tentang aplikasi
   void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -319,7 +333,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-  }
+  } //tentang aplikasi
+
+  //untuk logout
 
   void _showLogoutDialog(BuildContext context, AuthProvider authProvider) {
     showDialog(
@@ -362,3 +378,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 }
+// logout

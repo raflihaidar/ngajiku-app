@@ -8,7 +8,7 @@ class ProgressProvider with ChangeNotifier {
   List<ProgressModel> _progresses = [];
   bool _isLoading = false;
   String? _errorMessage;
-
+ 
   List<ProgressModel> get progresses => _progresses;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -22,7 +22,6 @@ class ProgressProvider with ChangeNotifier {
     try {
       _isLoading = true;
       _errorMessage = null;
-      // Jangan panggil notifyListeners() di sini untuk menghindari konflik build
 
       final QuerySnapshot snapshot = await _firestore
           .collection('progresses')

@@ -18,6 +18,71 @@ class StudentProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Method untuk cek duplikasi siswa berdasarkan nama dan guru
+  Future<bool> checkDuplicateStudent({
+    required String studentName,
+    required String guruId,
+    String? excludeStudentId, // untuk update, exclude student yang sedang di-edit
+  }) async {
+    try {
+      debugPrint('Checking duplicate for student: $studentName, guru: $guruId');
+      
+      Query query = _firestore
+          .collection('students')
+          .where('name', isEqualTo: studentName.trim())
+          .where('guruId', isEqualTo: guruId);
+      
+      final QuerySnapshot snapshot = await query.get();
+      
+      // Jika ada excludeStudentId (untuk update), abaikan document tersebut
+      if (excludeStudentId != null) {
+        final duplicates = snapshot.docs.where((doc) => doc.id != excludeStudentId);
+        bool isDuplicate = duplicates.isNotEmpty;
+        debugPrint('Duplicate check result (excluding $excludeStudentId): $isDuplicate');
+        return isDuplicate;
+      }
+      
+      bool isDuplicate = snapshot.docs.isNotEmpty;
+      debugPrint('Duplicate check result: $isDuplicate');
+      return isDuplicate;
+    } catch (e) {
+      debugPrint('Error checking duplicate student: $e');
+      return false; // Jika error, izinkan untuk safety
+    }
+  }
+
+  // Method untuk cek duplikasi berdasarkan nama dan parent (untuk parent yang login)
+  Future<bool> checkDuplicateStudentByParent({
+    required String studentName,
+    required String parentId,
+    String? excludeStudentId,
+  }) async {
+    try {
+      debugPrint('Checking duplicate for student: $studentName, parent: $parentId');
+      
+      Query query = _firestore
+          .collection('students')
+          .where('name', isEqualTo: studentName.trim())
+          .where('parentId', isEqualTo: parentId);
+      
+      final QuerySnapshot snapshot = await query.get();
+      
+      if (excludeStudentId != null) {
+        final duplicates = snapshot.docs.where((doc) => doc.id != excludeStudentId);
+        bool isDuplicate = duplicates.isNotEmpty;
+        debugPrint('Duplicate check result by parent (excluding $excludeStudentId): $isDuplicate');
+        return isDuplicate;
+      }
+      
+      bool isDuplicate = snapshot.docs.isNotEmpty;
+      debugPrint('Duplicate check result by parent: $isDuplicate');
+      return isDuplicate;
+    } catch (e) {
+      debugPrint('Error checking duplicate student by parent: $e');
+      return false;
+    }
+  }
+
   // Method untuk validasi apakah email parent ada di koleksi users
   Future<bool> validateParentEmail(String parentEmail) async {
     try {
@@ -174,6 +239,7 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
+  //Method untuk menambahkan siswa
   Future<bool> addStudent(StudentModel student) async {
     try {
       _isLoading = true;
@@ -188,6 +254,18 @@ class StudentProvider with ChangeNotifier {
           return false;
         }
         debugPrint('Parent email validated successfully: ${student.parentId}');
+      }
+
+      // CEK DUPLIKASI SEBELUM MENAMBAHKAN
+      bool isDuplicate = await checkDuplicateStudent(
+        studentName: student.name,
+        guruId: student.guruId,
+      );
+
+      if (isDuplicate) {
+        _errorMessage = 'Siswa dengan nama "${student.name}" sudah terdaftar untuk guru ini';
+        debugPrint('Duplicate student detected: ${student.name}');
+        return false;
       }
 
       final Map<String, dynamic> studentData = student.toMap();
@@ -208,6 +286,10 @@ class StudentProvider with ChangeNotifier {
       _students.insert(0, newStudent); // Add to beginning of list
       debugPrint('Student added successfully: ${newStudent.name} (ID: ${newStudent.id})');
       debugPrint('ParentId: ${newStudent.parentId}, GuruId: ${newStudent.guruId}');
+      
+      // SHOW NOTIFICATION WHEN STUDENT IS ADDED
+      _showStudentAddedNotification(newStudent.name);
+      
       return true;
     } catch (e) {
       debugPrint('Add student error: $e');
@@ -219,6 +301,7 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
+  //Method untuk update siswa
   Future<bool> updateStudent(StudentModel student) async {
     try {
       _isLoading = true;
@@ -235,6 +318,19 @@ class StudentProvider with ChangeNotifier {
         debugPrint('Parent email validated successfully for update: ${student.parentId}');
       }
 
+      // CEK DUPLIKASI SEBELUM UPDATE (exclude student yang sedang di-edit)
+      bool isDuplicate = await checkDuplicateStudent(
+        studentName: student.name,
+        guruId: student.guruId,
+        excludeStudentId: student.id, // exclude student ini dari pengecekan
+      );
+
+      if (isDuplicate) {
+        _errorMessage = 'Siswa dengan nama "${student.name}" sudah terdaftar untuk guru ini';
+        debugPrint('Duplicate student detected on update: ${student.name}');
+        return false;
+      }
+
       final Map<String, dynamic> studentData = student.toMap();
       studentData.remove('id');
       
@@ -248,6 +344,10 @@ class StudentProvider with ChangeNotifier {
         _students[index] = student;
         debugPrint('Student updated: ${student.name}');
       }
+      
+      // SHOW NOTIFICATION WHEN STUDENT IS UPDATED
+      _showStudentUpdatedNotification(student.name);
+      
       return true;
     } catch (e) {
       debugPrint('Update student error: $e');
@@ -259,11 +359,16 @@ class StudentProvider with ChangeNotifier {
     }
   }
 
+  //method untuk hapus siswa
   Future<bool> deleteStudent(String studentId) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
+
+      // Get student name before deletion for notification
+      final studentToDelete = getStudentById(studentId);
+      final studentName = studentToDelete?.name ?? 'Unknown';
 
       // Delete student
       await _firestore.collection('students').doc(studentId).delete();
@@ -280,6 +385,10 @@ class StudentProvider with ChangeNotifier {
       
       _students.removeWhere((s) => s.id == studentId);
       debugPrint('Student deleted: $studentId');
+      
+      // SHOW NOTIFICATION WHEN STUDENT IS DELETED
+      _showStudentDeletedNotification(studentName);
+      
       return true;
     } catch (e) {
       debugPrint('Delete student error: $e');
@@ -289,6 +398,40 @@ class StudentProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  // NOTIFICATION METHODS
+  void _showStudentAddedNotification(String studentName) {
+    try {
+      // Call notification helper if available
+      _showNotification('Siswa Ditambahkan', 'Siswa $studentName berhasil ditambahkan');
+    } catch (e) {
+      debugPrint('Error showing student added notification: $e');
+    }
+  }
+
+  void _showStudentUpdatedNotification(String studentName) {
+    try {
+      _showNotification('Siswa Diperbarui', 'Data siswa $studentName berhasil diperbarui');
+    } catch (e) {
+      debugPrint('Error showing student updated notification: $e');
+    }
+  }
+
+  void _showStudentDeletedNotification(String studentName) {
+    try {
+      _showNotification('Siswa Dihapus', 'Siswa $studentName berhasil dihapus');
+    } catch (e) {
+      debugPrint('Error showing student deleted notification: $e');
+    }
+  }
+
+  void _showNotification(String title, String message) {
+    // This can be replaced with your notification service
+    debugPrint('NOTIFICATION: $title - $message');
+    
+    // If you have NotificationHelper from the previous implementation:
+    // NotificationHelper.showCustomNotification(title, message);
   }
 
   StudentModel? getStudentById(String studentId) {
@@ -305,6 +448,28 @@ class StudentProvider with ChangeNotifier {
     return _students
         .where((s) => s.name.toLowerCase().contains(query.toLowerCase()))
         .toList();
+  }
+
+  // Search students with duplicate check
+  List<StudentModel> searchStudentsWithDuplicateInfo(String query) {
+    if (query.isEmpty) return _students;
+    
+    final results = _students
+        .where((s) => s.name.toLowerCase().contains(query.toLowerCase()))
+        .toList();
+    
+    // Add duplicate info to debug
+    for (var student in results) {
+      final duplicates = _students
+          .where((s) => s.name.toLowerCase() == student.name.toLowerCase() && s.id != student.id)
+          .toList();
+      
+      if (duplicates.isNotEmpty) {
+        debugPrint('Potential duplicate found for ${student.name}: ${duplicates.length} similar names');
+      }
+    }
+    
+    return results;
   }
 
   // Get students count for statistics
@@ -348,5 +513,34 @@ class StudentProvider with ChangeNotifier {
       debugPrint('Error getting parent emails: $e');
       return [];
     }
+  }
+
+  // Method untuk mendapatkan statistik duplikasi
+  Map<String, dynamic> getDuplicateStats() {
+    final Map<String, List<StudentModel>> nameGroups = {};
+    
+    for (var student in _students) {
+      final name = student.name.toLowerCase().trim();
+      if (!nameGroups.containsKey(name)) {
+        nameGroups[name] = [];
+      }
+      nameGroups[name]!.add(student);
+    }
+    
+    final duplicateGroups = nameGroups.entries
+        .where((entry) => entry.value.length > 1)
+        .toList();
+    
+    return {
+      'totalStudents': _students.length,
+      'uniqueNames': nameGroups.length,
+      'duplicateGroups': duplicateGroups.length,
+      'duplicateStudents': duplicateGroups.fold<int>(0, (sum, group) => sum + group.value.length),
+      'duplicateDetails': duplicateGroups.map((group) => {
+        'name': group.key,
+        'count': group.value.length,
+        'students': group.value.map((s) => {'id': s.id, 'guru': s.guruId, 'parent': s.parentId}).toList(),
+      }).toList(),
+    };
   }
 }
