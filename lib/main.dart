@@ -49,8 +49,8 @@ void main() async {
 Future<void> _showNotification() async {
   await flutterLocalNotificationsPlugin.show(
     0,
-    'Hai Bunda, ',
-    'Sudahkah Anak Bunda Mengaji Hari Ini?',
+    'Hai! ',
+    'Jangan Lupa Dicatat Ya Proses Mengaji Anak-anaknya.',
     const NotificationDetails(
       android: AndroidNotificationDetails(
         'channel_id',
